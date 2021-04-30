@@ -31,7 +31,17 @@ class DonorQuerySet(models.QuerySet):
     def filter_donated(self, at_least=1):
         return self.annotate_donatedcount().filter(donated_count__gte=at_least)
 
-class Donor(models.Model):
+class Collectible:
+    def get_absolute_url(self):
+        return self.format_url(viewname='search-results')
+
+    def get_embedded_url(self):
+        return self.format_url(viewname='embedded-search-results')
+
+    def format_url(self, viewname):
+        return '{}?{}'.format(reverse(viewname), self.encode_params())
+
+class Donor(Collectible, models.Model):
     last_name = models.CharField(max_length=256, blank=True)
     first_name = models.CharField(max_length=256, blank=True)
     home_phone = models.CharField(max_length=256, blank=True)
@@ -50,8 +60,8 @@ class Donor(models.Model):
     def __str__(self):
         return '{last}, {first}'.format(first=self.first_name, last=self.last_name) if self.first_name else self.last_name
 
-    def get_absolute_url(self):
-        return '{}?{}'.format(reverse('search-results'), urlencode({'donor': self.id}))
+    def encode_params(self):
+        return urlencode(dict(donor=self.id))
 
     @staticmethod
     def index():
@@ -59,8 +69,6 @@ class Donor(models.Model):
             {'name': '{last}, {first}'.format(last=donor.last_name, first=donor.first_name), 'count': donor.count, 'href': donor.get_absolute_url()}
             for donor in Donor.objects.annotate(count=Count('photo__id')).order_by('last_name', 'first_name').filter(count__gt=0)
         ]
-
-
 
 
 class Collection(models.Model):
@@ -82,7 +90,7 @@ class Collection(models.Model):
         return self.name
 
 
-class Term(models.Model):
+class Term(Collectible, models.Model):
     term = models.CharField(max_length=64, unique=True)
     slug = models.SlugField(unique=True, blank=True, editable=False)
 
@@ -91,8 +99,8 @@ class Term(models.Model):
             self.slug = slugify(self.term)
         super().save(*args, **kwargs)
 
-    def get_absolute_url(self):
-        return '{}?{}'.format(reverse('search-results'), urlencode({'term': self.id}))
+    def encode_params(self):
+        return urlencode(dict(term=self.id))
 
     @staticmethod
     def index():
@@ -108,7 +116,7 @@ class TagQuerySet(models.QuerySet):
     def __str__(self):
         return ', '.join(str(t) for t in self)
 
-class Tag(models.Model):
+class Tag(Collectible, models.Model):
     tag = LowerCaseCharField(max_length=64, unique=True)
     slug = models.SlugField(unique=True, blank=True, editable=False)
 
@@ -119,8 +127,8 @@ class Tag(models.Model):
             self.slug = slugify(self.tag)
         super().save(*args, **kwargs)
 
-    def get_absolute_url(self):
-        return '{}?{}'.format(reverse('search-results'), urlencode({'tag': self.tag}))
+    def encode_params(self):
+        return urlencode(dict(tag=self.tag))
 
     @staticmethod
     def dead_tags():
@@ -291,7 +299,7 @@ class Photo(models.Model):
             url = '{}?{}'.format(url, params.urlencode())
         return url
 
-    def get_json_url(self, queryset=None, params=None):
+    def create_url(self, viewname, queryset=None, params=None):
         kwargs = {'photo': self.accession_number}
         try:
             kwargs['page'] = self.page_number(queryset=queryset)
@@ -299,10 +307,13 @@ class Photo(models.Model):
             pass
 
         url = reverse(
-            'photoview-json',
+            viewname,
             kwargs=kwargs,
         )
         return self.add_params(url=url, params=params or hasattr(self, 'params') and self.params)
+
+    def get_json_url(self, queryset=None, params=None):
+        return self.create_url('photoview-json', queryset=queryset, params=params)
 
     def get_urls(self):
         return {
@@ -322,22 +333,16 @@ class Photo(models.Model):
         return self.add_params(url=url, params=params)
 
 
-    def get_absolute_url(self, queryset=None, params=None):
-        kwargs = {'photo': self.accession_number}
-        try:
-            kwargs['page'] = self.page_number(queryset=queryset)
-        except AttributeError:
-            pass
+    def get_embedded_url(self, queryset=None, params=None):
+        return self.create_url('embedded-photoview', queryset=queryset, params=params)
 
-        url = reverse(
-            'photoview',
-            kwargs=kwargs,
-        )
-        return self.add_params(url=url, params=params or hasattr(self, 'params') and self.params)
+    def get_absolute_url(self, queryset=None, params=None):
+        return self.create_url('photoview', queryset=queryset, params=params)
 
     def get_edit_url(self):
         return reverse('admin:archive_photo_change', args=(self.id,))
 
+    @staticmethod
     def format_url(**kwargs):
         return "{}?{}".format(
             reverse('gridview'), urlencode(kwargs)

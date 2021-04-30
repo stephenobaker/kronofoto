@@ -39,6 +39,7 @@ NO_URLS = dict(url='#', json_url='#')
 
 
 class BaseTemplateMixin:
+    embedded = False
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         photo_count = cache.get('photo_count:')
@@ -48,6 +49,7 @@ class BaseTemplateMixin:
         context['photo_count'] = photo_count
         context['grid_url'] = reverse('gridview')
         context['timeline_url'] = '#'
+        context['embedded'] = self.embedded
         return context
 
 

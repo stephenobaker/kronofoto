@@ -1,9 +1,10 @@
 {% load static %}
+{% load embeddable %}
         <div class="metadata-1a">
           <ul>
             <li>{{ photo.year }}, {{ photo.location }}{% if edit_url %} <a href="{{ edit_url }}">[ Edit ]</a>{% endif %}</li>
             <li>ID#: {{photo.accession_number}} <!-- <a href="{{ photo.original.url }}" target="_blank" rel="noopener noreferrer"><img class="download-icon" src="{% static 'assets/images/download.svg' %}" /></a> --></li>
-            <li>Donated by <a href="{{ photo.donor.get_absolute_url }}">{{ photo.donor }}</a></li>
+            <li>Donated by {% embeddable_link embedded photo.donor %}</li>
           </ul>
         </div>
         <div class="metadata-2a">
@@ -23,7 +24,7 @@
             <li><span class="field-name">Category Terms:</span>
             {% if photo.terms.all %}
                 {% for term in photo.terms.all %}{% if not forloop.first %},{% endif %} 
-                    <a href="{{ term.get_absolute_url }}">{{ term }}</a>{% endfor %}
+                    {% embeddable_link embedded term %}{% endfor %}
             {% else %}
             None
             {% endif %}
@@ -31,7 +32,7 @@
             <li><span class="field-name">Tags:</span>
             {% if tags %}
                 {% for tag in tags %}{% if not forloop.first %},{% endif %} 
-                <a href="{{ tag.get_absolute_url }}">{{ tag }}</a>{% endfor %}
+                {% embeddable_link embedded tag %}{% endfor %}
             {% else %}
             None
             {% endif %}

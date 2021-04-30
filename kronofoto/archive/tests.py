@@ -9,6 +9,14 @@ from archive.search.expression import *
 from .forms import TagForm
 
 
+class CollectibleInterface:
+    def testShouldHaveEmbedUrl(self):
+        self.assertTrue(hasattr(self.obj, 'get_embedded_url'))
+        self.assertTrue(callable(self.obj.get_embedded_url))
+    def testShouldHaveAbsoluteUrl(self):
+        self.assertTrue(hasattr(self.obj, 'get_absolute_url'))
+        self.assertTrue(callable(self.obj.get_absolute_url))
+
 class CollectionQueryTest(TestCase):
     def setUp(self):
         self.donor = models.Donor.objects.create(first_name='First', last_name='Last')
@@ -59,11 +67,9 @@ class TimelinePaginatorTest(TestCase):
         for photo in page.object_list:
             self.assertEqual(photo['thumbnail']['url'], views.EMPTY_PNG)
 
-class PhotoTest(TestCase):
-    def testShouldNotAppearTwiceWhenTwoUsersSubmitSameTag(self):
-        user = User.objects.create_user('testuser', 'user@email.com', 'testpassword')
-        user2 = User.objects.create_user('testuser2', 'user@email.com', 'testpassword')
-        photo = models.Photo(
+class PhotoTest(CollectibleInterface, TestCase):
+    def setUp(self):
+        self.obj = models.Photo.objects.create(
             original=SimpleUploadedFile(
                 name='test_img.jpg',
                 content=open('testdata/test.jpg', 'rb').read(),
@@ -72,23 +78,28 @@ class PhotoTest(TestCase):
             is_published=True,
             year=1950,
         )
-        photo.save()
+
+    def testShouldNotAppearTwiceWhenTwoUsersSubmitSameTag(self):
+        user = User.objects.create_user('testuser', 'user@email.com', 'testpassword')
+        user2 = User.objects.create_user('testuser2', 'user@email.com', 'testpassword')
         tag = models.Tag.objects.create(tag="test tag")
-        phototag = models.PhotoTag.objects.create(tag=tag, photo=photo, accepted=True)
+        phototag = models.PhotoTag.objects.create(tag=tag, photo=self.obj, accepted=True)
         phototag.creator.add(user2)
         phototag.creator.add(user)
         phototag.save()
-        photo.save()
+        self.obj.save()
         self.assertEqual(models.Photo.objects.filter_photos(models.CollectionQuery(TagExactly("test tag"), user)).count(), 1)
-        self.assertEqual(photo.get_accepted_tags().count(), 1)
+        self.assertEqual(self.obj.get_accepted_tags().count(), 1)
 
     def testCityURL(self):
-        photo = models.Photo(city='CityName', state='StateName')
-        self.assertEqual(photo.get_city_url(), '{}?{}'.format(reverse('gridview'), urlencode({'city': photo.city, 'state': photo.state})))
+        self.obj.city = 'CityName'
+        self.obj.state = 'StateName'
+        self.assertEqual(self.obj.get_city_url(), '{}?{}'.format(reverse('gridview'), urlencode({'city': self.obj.city, 'state': self.obj.state})))
 
     def testCountyURL(self):
-        photo = models.Photo(county='CountyName', state='StateName')
-        self.assertEqual(photo.get_county_url(), '{}?{}'.format(reverse('gridview'), urlencode({'county': photo.county, 'state': photo.state})))
+        self.obj.county = 'CountyName'
+        self.obj.state = 'StateName'
+        self.assertEqual(self.obj.get_county_url(), '{}?{}'.format(reverse('gridview'), urlencode({'county': self.obj.county, 'state': self.obj.state})))
 
 class PhotoTagTest(TestCase):
     def setUp(self):
@@ -131,20 +142,35 @@ class PhotoTagTest(TestCase):
         self.assertEqual(models.Tag.objects.filter(tag='tag').count(), 0)
 
 
-class DonorTest(TestCase):
-    def testURL(self):
-        donor = models.Donor.objects.create(
+class DonorTest(CollectibleInterface, TestCase):
+    def setUp(self):
+        self.obj = models.Donor.objects.create(
             last_name='last',
             first_name='first',
         )
-        self.assertEqual(donor.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'donor': donor.id})))
-
-class TermTest(TestCase):
     def testURL(self):
-        term = models.Term.objects.create(term="test term")
-        self.assertEqual(term.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'term': term.id})))
+        self.assertEqual(self.obj.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'donor': self.obj.id})))
 
-class TagTest(TestCase):
+class TermTest(CollectibleInterface, TestCase):
+    def setUp(self):
+        self.obj = models.Term.objects.create(term="test term")
+
+    def testURL(self):
+        self.assertEqual(self.obj.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'term': self.obj.id})))
+
+class TagTest(CollectibleInterface, TestCase):
+    def setUp(self):
+        self.obj = models.Tag.objects.create(tag="CAPITALIZED")
+
+    def testURL(self):
+        tag = models.Tag.objects.create(tag="test tag")
+        self.assertEqual(self.obj.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'tag': self.obj.tag})))
+
+    def testShouldEnforceLowerCase(self):
+        self.obj.refresh_from_db()
+        self.assertEqual(self.obj.tag, 'capitalized')
+
+class TagsTest(TestCase):
     def testSubstringSearchShouldNotReturnTooManyThings(self):
         photo = models.Photo.objects.create(
             original=SimpleUploadedFile(
@@ -223,14 +249,6 @@ class TagTest(TestCase):
         for tag in models.Tag.dead_tags():
             self.assertNotEqual(tag.tag, tag1.tag)
 
-    def testURL(self):
-        tag = models.Tag.objects.create(tag="test tag")
-        self.assertEqual(tag.get_absolute_url(), "{}?{}".format(reverse('search-results'), urlencode({'tag': tag.tag})))
-
-    def testShouldEnforceLowerCase(self):
-        tag = models.Tag.objects.create(tag='CAPITALIZED')
-        tag.refresh_from_db()
-        self.assertEqual(tag.tag, 'capitalized')
 
 
 class TagFormTest(TestCase):

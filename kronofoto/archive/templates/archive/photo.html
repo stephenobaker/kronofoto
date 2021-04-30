@@ -56,10 +56,8 @@
     </a>
         </div>
       </div>
-
-      
-      
     </nav>
+    {% if not embedded %}
     <div class="year-ticker">
       <div class="active-year-marker" draggable="true">
         <div class="marker-image" style="background-image: url('{% static "assets/images/skyblue/toggle.svg" %}');">
@@ -83,6 +81,7 @@
       </div> -->
       {% endcomment %}
     </div>
+    {% endif %}
   </main>
   {{ initialstate | json_script:"initial-state" }}
   <script>

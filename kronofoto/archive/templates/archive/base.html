@@ -23,6 +23,7 @@
 <body>
   {% gtm_body %}
   <div class="overlay" style="display: none;"></div>
+  {% if not embedded %}
   <header>
     <nav aria-label="Main navigation">
       <div class="main-nav">
@@ -112,6 +113,7 @@
       </div>
     </nav>
   </header>
+  {% endif %}
     {% block content %}
     {% endblock %}
   <!-- <footer></footer> -->

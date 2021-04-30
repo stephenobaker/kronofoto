@@ -14,9 +14,15 @@
 </div>
 
 <ul class="photo-grid">
+    {% if embedded %}
+    {% for photo in page_obj %}
+    <li><a href="{{ photo.get_embedded_url }}"><img src="{{ photo.h700.url }}"/></a></li>
+    {% endfor %}
+    {% else %}
     {% for photo in page_obj %}
     <li><a href="{{ photo.get_absolute_url }}"><img src="{{ photo.h700.url }}"/></a></li>
     {% endfor %}
+    {% endif %}
 </ul>
 <div class="grid-navigation">
     <div id="position">Items {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ paginator.count }}
