@@ -46,6 +46,10 @@ class BaseTemplateMixin:
         if not photo_count:
             photo_count = Photo.count()
             cache.set('photo_count:', photo_count)
+        constraint_expr = None
+        if 'constraint' in self.request.GET:
+            constraint_expr = self.request.GET['constraint']
+        context['constraint_expr'] = constraint_expr
         context['photo_count'] = photo_count
         context['grid_url'] = reverse('gridview')
         context['timeline_url'] = '#'
@@ -309,11 +313,21 @@ class PhotoView(JSONResponseMixin, BaseTemplateMixin, TemplateView):
     def get_queryset(self):
         form = SearchForm(self.request.GET)
         expr = None
-        if form.is_valid():
-            try:
+        try:
+            if form.is_valid():
                 expr = form.as_expression()
-            except NoExpression:
-                pass
+            else:
+                expr = None
+        except NoExpression:
+            expr = None
+        if 'constraint' in self.request.GET:
+            constraint_expr = Parser.tokenize(self.request.GET['constraint']).parse().shakeout()
+        else:
+            constraint_expr = None
+        if expr and constraint_expr:
+            expr = expr & constraint_expr
+        else:
+            expr = expr or constraint_expr
         self.collection = CollectionQuery(expr, self.request.user)
         return Photo.objects.filter_photos(self.collection)
 
@@ -363,18 +377,19 @@ class PhotoView(JSONResponseMixin, BaseTemplateMixin, TemplateView):
             return {}
         photo = context['photo']
         return {
-            'url': photo.get_absolute_url(),
+            'url': photo.get_embedded_url() if self.embedded else photo.get_absolute_url(),
             'h700': photo.h700.url,
             'tags': str(context['tags']),
             'original': photo.original.url,
             'grid_url': photo.get_grid_url(),
             'metadata': render_to_string('archive/photometadata.html', context, self.request),
             'thumbnails': render_to_string('archive/thumbnails.html', context, self.request),
-            'backward': context['prev_page'][0].get_urls() if context['page'].has_previous() else NO_URLS,
-            'forward': context['next_page'][0].get_urls() if context['page'].has_next() else NO_URLS,
-            'previous': photo.previous.get_urls() if hasattr(photo, 'previous') else NO_URLS,
-            'next': photo.next.get_urls() if hasattr(photo, 'next') else NO_URLS,
+            'backward': context['prev_page'][0].get_urls(self.embedded) if context['page'].has_previous() else NO_URLS,
+            'forward': context['next_page'][0].get_urls(self.embedded) if context['page'].has_next() else NO_URLS,
+            'previous': photo.previous.get_urls(self.embedded) if hasattr(photo, 'previous') else NO_URLS,
+            'next': photo.next.get_urls(self.embedded) if hasattr(photo, 'next') else NO_URLS,
             'year': photo.year,
+            'embedded': self.embedded,
         }
 
     def render(self, context, **kwargs):
@@ -485,7 +500,7 @@ class GridView(GridBase):
         return context
 
     def format_page_url(self, num):
-        return "{}?{}".format(reverse('gridview', args=(num,)), self.request.GET.urlencode())
+        return "{}?{}".format(reverse(self.request.resolver_match.view_name, args=(num,)), self.request.GET.urlencode())
 
     def attach_params(self, photos):
         params = self.request.GET.copy()
@@ -499,7 +514,7 @@ class SearchResultsView(GridBase):
     def format_page_url(self, num):
         params = self.request.GET.copy()
         params['page'] = num
-        return "{}?{}".format(reverse('search-results'), params.urlencode())
+        return "{}?{}".format(reverse(self.request.resolver_match.view_name), params.urlencode())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -527,17 +542,27 @@ class SearchResultsView(GridBase):
 
     def get_queryset(self):
         try:
-            self.expr = expr = self.form.as_expression()
-            if expr.is_collection():
-                self.collection = CollectionQuery(expr, self.request.user)
+            self.expr = self.form.as_expression()
+        except NoExpression:
+            self.expr = None
+        if 'constraint' in self.request.GET:
+            constraint_expr = Parser.tokenize(self.request.GET['constraint']).parse().shakeout()
+        else:
+            constraint_expr = None
+        if self.expr and constraint_expr:
+            self.expr = self.expr & constraint_expr
+        else:
+            self.expr = self.expr or constraint_expr
+        if self.expr:
+            if self.expr.is_collection():
+                self.collection = CollectionQuery(self.expr, self.request.user)
                 qs = self.model.objects.filter_photos(self.collection)
             else:
                 qs = expr.as_search(self.model.objects, self.request.user)
             if qs.count() == 1:
                 self.redirect = redirect(qs[0].get_absolute_url())
             return qs
-        except NoExpression:
-            self.expr = None
+        else:
             return []
 
 

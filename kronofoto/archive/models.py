@@ -16,6 +16,7 @@ import operator
 from bisect import bisect_left
 from django.utils.http import urlencode
 import hashlib
+from django.http import QueryDict
 
 class LowerCaseCharField(models.CharField):
     def get_prep_value(self, value):
@@ -32,14 +33,16 @@ class DonorQuerySet(models.QuerySet):
         return self.annotate_donatedcount().filter(donated_count__gte=at_least)
 
 class Collectible:
-    def get_absolute_url(self):
-        return self.format_url(viewname='search-results')
+    def get_absolute_url(self, params=None):
+        return self.format_url(viewname='search-results', params=params)
 
-    def get_embedded_url(self):
-        return self.format_url(viewname='embedded-search-results')
+    def get_embedded_url(self, params=None):
+        return self.format_url(viewname='embedded-search-results', params=params)
 
-    def format_url(self, viewname):
-        return '{}?{}'.format(reverse(viewname), self.encode_params())
+    def format_url(self, viewname, params=None):
+        if not params:
+            params = QueryDict(mutable=True)
+        return '{}?{}'.format(reverse(viewname), self.encode_params(params))
 
 class Donor(Collectible, models.Model):
     last_name = models.CharField(max_length=256, blank=True)
@@ -60,8 +63,9 @@ class Donor(Collectible, models.Model):
     def __str__(self):
         return '{last}, {first}'.format(first=self.first_name, last=self.last_name) if self.first_name else self.last_name
 
-    def encode_params(self):
-        return urlencode(dict(donor=self.id))
+    def encode_params(self, params):
+        params['donor'] = self.id
+        return params.urlencode()
 
     @staticmethod
     def index():
@@ -99,8 +103,9 @@ class Term(Collectible, models.Model):
             self.slug = slugify(self.term)
         super().save(*args, **kwargs)
 
-    def encode_params(self):
-        return urlencode(dict(term=self.id))
+    def encode_params(self, params):
+        params['term'] = self.id
+        return params.urlencode()
 
     @staticmethod
     def index():
@@ -128,7 +133,10 @@ class Tag(Collectible, models.Model):
         super().save(*args, **kwargs)
 
     def encode_params(self):
-        return urlencode(dict(tag=self.tag))
+        params = dict(tag=self.tag)
+        if constraint:
+            params['constraint'] = constraint
+        return urlencode(params)
 
     @staticmethod
     def dead_tags():
@@ -315,10 +323,13 @@ class Photo(models.Model):
     def get_json_url(self, queryset=None, params=None):
         return self.create_url('photoview-json', queryset=queryset, params=params)
 
-    def get_urls(self):
+    def get_embedded_json_url(self, queryset=None, params=None):
+        return self.create_url('embedded-photoview-json', queryset=queryset, params=params)
+
+    def get_urls(self, embed=False):
         return {
-            'url': self.get_absolute_url(),
-            'json_url': self.get_json_url(),
+            'url': self.get_embedded_url() if embed else self.get_absolute_url(),
+            'json_url': self.get_embedded_json_url() if embed else self.get_json_url(),
         }
 
     def get_grid_url(self, params=None):

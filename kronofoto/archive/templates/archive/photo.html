@@ -1,6 +1,7 @@
 {% extends "archive/base.html" %}
 {% load static %}
 {% load timeline %}
+{% load embeddable %}
 {% load thumbnails %}
 {% load photometadata %}
 {% load cache %}
@@ -38,7 +39,7 @@
       <div class="fi-thumbnail-carousel">
         <div class="back-arrows">
 
-    <a id="backward" {% if page.has_previous %} data-json-href="{{ prev_page.0.get_json_url }}" href="{{ prev_page.0.get_absolute_url }}"{% endif %}>
+    <a id="backward" {% if page.has_previous %} data-json-href="{% embeddable_json_url embedded prev_page.0 constraint_expr %}" href="{% embeddable_url embedded prev_page.0 constraint_expr %}"{% endif %}>
         <img src="{% static "assets/images/double-back-arrow-black.png" %}" alt="arrows pointing back">
     </a>
         </div>
@@ -51,7 +52,7 @@
         </div>
         <div class="forward-arrows">
 
-    <a id="forward" {% if page.has_next %} href="{{ next_page.0.get_absolute_url }}" data-json-href="{{ next_page.0.get_json_url }}"{% endif %}>
+    <a id="forward" {% if page.has_next %} href="{% embeddable_url embedded next_page.0 constraint_expr %}" data-json-href="{% embeddable_json_url embedded next_page.0 constraint_expr %}"{% endif %}>
       <img src="{% static "assets/images/double-back-arrow-black.png" %}" alt="arrows pointing forward">
     </a>
         </div>

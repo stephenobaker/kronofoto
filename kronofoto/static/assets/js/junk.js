@@ -59,7 +59,10 @@ const loadstate = data => {
     forward.setAttribute('data-json-href', data.forward ? data.forward.json_url : "#")
     backward.setAttribute('href', data.backward && data.backward.url ? data.backward.url : "#")
     backward.setAttribute('data-json-href', data.backward && data.backward.json_url ? data.backward.json_url : "#")
-    document.getElementById('grid-a').setAttribute('href', data.grid_url)
+    console.log(data)
+    if (!data.embedded) {
+        document.getElementById('grid-a').setAttribute('href', data.grid_url)
+    }
     document.querySelector('#dl > a').setAttribute('href', data.original)
     moveMarker(data.year)
 }
@@ -84,20 +87,22 @@ document.addEventListener('click', e => {
 const moveMarker = year => {
     const marker = document.querySelector('.active-year-marker');
     const markerYearElement = document.querySelector('.marker-year');
+    if (markerYearElement) {
 
-    // Update year text
-    markerYearElement.textContent = year;
+        // Update year text
+        markerYearElement.textContent = year;
 
-    // Show Marker (might not be necessary to do this display stuff)
-    marker.style.display = 'block';
+        // Show Marker (might not be necessary to do this display stuff)
+        marker.style.display = 'block';
 
-    // move marker to position of tick
-    let tick = document.querySelector(`.year-ticker svg a rect[data-year="${year}"]`);
-    let bounds = tick.getBoundingClientRect();
-    let markerStyle = window.getComputedStyle(marker);
-    let markerWidth = markerStyle.getPropertyValue('width').replace('px', ''); // trim off px for math
-    let offset = (bounds.x - (markerWidth / 2)); // calculate marker width offset for centering on tick
-    marker.style.transform = `translateX(${offset}px)`;
+        // move marker to position of tick
+        let tick = document.querySelector(`.year-ticker svg a rect[data-year="${year}"]`);
+        let bounds = tick.getBoundingClientRect();
+        let markerStyle = window.getComputedStyle(marker);
+        let markerWidth = markerStyle.getPropertyValue('width').replace('px', ''); // trim off px for math
+        let offset = (bounds.x - (markerWidth / 2)); // calculate marker width offset for centering on tick
+        marker.style.transform = `translateX(${offset}px)`;
+    }
 }
 
 window.onpopstate = evt => {
@@ -253,73 +258,74 @@ const images = [img1, img2, img3, img4]
 
 const randomImg = images[Math.floor(Math.random()*images.length)]
 window.addEventListener('DOMContentLoaded', () => {
-    let hamburger = document.querySelector(".hamburger-icon");
-    let info = document.querySelector('.meta-info-icon')
-    let dl = document.querySelector('.meta-dl-icon')
-    let search = document.querySelector('.search-icon')
-    let carrot = document.querySelector('.carrot')
-    let timelineMarker = document.querySelector('.marker-image');
+    if (!current_state.embedded) 
+    {
+        let hamburger = document.querySelector(".hamburger-icon");
+        let info = document.querySelector('.meta-info-icon')
+        let dl = document.querySelector('.meta-dl-icon')
+        let search = document.querySelector('.search-icon')
+        let carrot = document.querySelector('.carrot')
+        let timelineMarker = document.querySelector('.marker-image');
+        document.getElementsByClassName("logo-img")[0].src = randomImg;
 
-    document.getElementsByClassName("logo-img")[0].src = randomImg;
-
-    if(randomImg == img1) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#6c84bd");
-        hamburger.setAttribute("src", "/static/assets/images/skyblue/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/skyblue/info.svg");
-            dl.setAttribute("src", "/static/assets/images/skyblue/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/skyblue/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/skyblue/carrot.svg");
-        timelineMarker.style.backgroundImage = "url('/static/assets/images/skyblue/toggle.svg')";
-    } else if(randomImg == img2) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#c28800");
-        hamburger.setAttribute("src", "/static/assets/images/golden/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/golden/info.svg");
-            dl.setAttribute("src", "/static/assets/images/golden/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/golden/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/golden/carrot.svg");
-        timelineMarker.style.backgroundImage = "url('/static/assets/images/golden/toggle.svg')";
-    } else if(randomImg == img3) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#c2a55e");
-        hamburger.setAttribute("src", "/static/assets/images/haybail/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/haybail/info.svg");
-            dl.setAttribute("src", "/static/assets/images/haybail/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/haybail/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/haybail/carrot.svg");
-        timelineMarker.style.backgroundImage = "url('/static/assets/images/haybail/toggle.svg')";
-    } else if(randomImg == img4) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#445170");
-        hamburger.setAttribute("src", "/static/assets/images/navy/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/navy/info.svg");
-            dl.setAttribute("src", "/static/assets/images/navy/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/navy/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/navy/carrot.svg");
-        timelineMarker.style.backgroundImage = "url('/static/assets/images/navy/toggle.svg')";
-    }/*  else if(randomImg == img5) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#9769ac");
-        hamburger.setAttribute("src", "/static/assets/images/purple/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/purple/info.svg");
-            dl.setAttribute("src", "/static/assets/images/purple/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/purple/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/purple/carrot.svg");
-    } else if(randomImg == img6) {
-        document.documentElement.style.setProperty("--fp-main-blue", "#5ebbc2");
-        hamburger.setAttribute("src", "/static/assets/images/turquoise/menu.svg");
-        if(info && dl) {
-            info.setAttribute("src", "/static/assets/images/turquoise/info.svg");
-            dl.setAttribute("src", "/static/assets/images/turquoise/download.svg");
-        }
-        search.setAttribute("src", "/static/assets/images/turquoise/search.svg");
-        carrot.setAttribute("src", "/static/assets/images/turquoise/carrot.svg");
-    } */
-
+        if(randomImg == img1) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#6c84bd");
+            hamburger.setAttribute("src", "/static/assets/images/skyblue/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/skyblue/info.svg");
+                dl.setAttribute("src", "/static/assets/images/skyblue/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/skyblue/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/skyblue/carrot.svg");
+            timelineMarker.style.backgroundImage = "url('/static/assets/images/skyblue/toggle.svg')";
+        } else if(randomImg == img2) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#c28800");
+            hamburger.setAttribute("src", "/static/assets/images/golden/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/golden/info.svg");
+                dl.setAttribute("src", "/static/assets/images/golden/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/golden/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/golden/carrot.svg");
+            timelineMarker.style.backgroundImage = "url('/static/assets/images/golden/toggle.svg')";
+        } else if(randomImg == img3) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#c2a55e");
+            hamburger.setAttribute("src", "/static/assets/images/haybail/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/haybail/info.svg");
+                dl.setAttribute("src", "/static/assets/images/haybail/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/haybail/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/haybail/carrot.svg");
+            timelineMarker.style.backgroundImage = "url('/static/assets/images/haybail/toggle.svg')";
+        } else if(randomImg == img4) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#445170");
+            hamburger.setAttribute("src", "/static/assets/images/navy/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/navy/info.svg");
+                dl.setAttribute("src", "/static/assets/images/navy/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/navy/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/navy/carrot.svg");
+            timelineMarker.style.backgroundImage = "url('/static/assets/images/navy/toggle.svg')";
+        }/*  else if(randomImg == img5) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#9769ac");
+            hamburger.setAttribute("src", "/static/assets/images/purple/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/purple/info.svg");
+                dl.setAttribute("src", "/static/assets/images/purple/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/purple/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/purple/carrot.svg");
+        } else if(randomImg == img6) {
+            document.documentElement.style.setProperty("--fp-main-blue", "#5ebbc2");
+            hamburger.setAttribute("src", "/static/assets/images/turquoise/menu.svg");
+            if(info && dl) {
+                info.setAttribute("src", "/static/assets/images/turquoise/info.svg");
+                dl.setAttribute("src", "/static/assets/images/turquoise/download.svg");
+            }
+            search.setAttribute("src", "/static/assets/images/turquoise/search.svg");
+            carrot.setAttribute("src", "/static/assets/images/turquoise/carrot.svg");
+        } */
+    }
 });

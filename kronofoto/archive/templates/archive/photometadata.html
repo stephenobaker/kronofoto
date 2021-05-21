@@ -4,7 +4,7 @@
           <ul>
             <li>{{ photo.year }}, {{ photo.location }}{% if edit_url %} <a href="{{ edit_url }}">[ Edit ]</a>{% endif %}</li>
             <li>ID#: {{photo.accession_number}} <!-- <a href="{{ photo.original.url }}" target="_blank" rel="noopener noreferrer"><img class="download-icon" src="{% static 'assets/images/download.svg' %}" /></a> --></li>
-            <li>Donated by {% embeddable_link embedded photo.donor %}</li>
+            <li>Donated by {% embeddable_link embedded photo.donor constraint_expr %}</li>
           </ul>
         </div>
         <div class="metadata-2a">
@@ -24,7 +24,7 @@
             <li><span class="field-name">Category Terms:</span>
             {% if photo.terms.all %}
                 {% for term in photo.terms.all %}{% if not forloop.first %},{% endif %} 
-                    {% embeddable_link embedded term %}{% endfor %}
+                    {% embeddable_link embedded term constraint_expr %}{% endfor %}
             {% else %}
             None
             {% endif %}
@@ -32,13 +32,15 @@
             <li><span class="field-name">Tags:</span>
             {% if tags %}
                 {% for tag in tags %}{% if not forloop.first %},{% endif %} 
-                {% embeddable_link embedded tag %}{% endfor %}
+                {% embeddable_link embedded tag constraint_expr %}{% endfor %}
             {% else %}
             None
             {% endif %}
             <a class="add-tag" href="{% url "addtag" photo.accession_number %}">＋</a>
             </li>
             <li><span class="field-name">Comments:</span>{{ photo.caption }}</li>
+            {% if not embedded %}
             <li><a href="{% url "add-to-list" photo.accession_number %}">Add to list</a></li>
+            {% endif %}
           </ul>
         </div>
