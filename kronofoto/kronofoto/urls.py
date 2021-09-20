@@ -26,6 +26,7 @@ urlpatterns = [
     path('contribute/', TemplateView.as_view(template_name='archive/contribute.html', extra_context={'title': 'Contribute'}), name='contribute'),
     path('volunteer/', TemplateView.as_view(template_name='archive/volunteer.html', extra_context={'title': 'Volunteer'}), name='volunteer'),
     path('give/', TemplateView.as_view(template_name='archive/give.html', extra_context={'title': 'Give'}), name='give'),
+    path('collaborate/', TemplateView.as_view(template_name='archive/collaborate.html', extra_context={'title': 'Collaborate'}), name='collaborate'),
     path('original/<str:photo>.jpg', views.XSendImage.as_view(), name='download'),
     path('accounts/', include('archive.auth.urls')),
     path('user/<str:username>/', views.Profile.as_view(), name='user-page'),

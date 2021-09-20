@@ -13,6 +13,7 @@ def docnav(active_item=None):
         ('Contribute', 'contribute'),
         ('Volunteer', 'volunteer'),
         ('Give', 'give'),
+        ('Collaborate', 'collaborate'),
     )
     return {
         'pages': [
